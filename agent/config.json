@@ -85,5 +85,5 @@
   "show_user_popup": true,
   "poll_interval_ms": 150,
   "log_file": "dlp_violations.log",
-  "webhook_url": ""
+  "webhook_url": "http://127.0.0.1:5000/api/report"
 }

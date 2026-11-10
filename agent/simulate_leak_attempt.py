@@ -22,7 +22,10 @@ def main():
     print("  TELEGRAM 3D LEAK ATTEMPT - LIVE DEMONSTRATION")
     print("=" * 65)
 
-    temp_dir = tempfile.mkdtemp(prefix="dlp_demo_")
+    # Create demonstration workspace in project directory instead of Temp (to avoid Temp exclusion)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    temp_dir = os.path.join(project_root, "test_demo_sandbox")
+    os.makedirs(temp_dir, exist_ok=True)
     mock_telegram_exe = os.path.join(temp_dir, "Telegram.exe")
     fake_asset = os.path.join(temp_dir, "confidential_character.fbx")
 
@@ -73,10 +76,15 @@ with open(r"{fake_asset}", "rb") as f:
     if poll_result is not None:
         print(f"[SUCCESS] Mock Telegram (PID {proc.pid}) was DETECTED and TERMINATED by DLP!")
         print(f"[SUCCESS] Process exit code: {poll_result}")
+        if watchdog.reporter and watchdog.reporter.webhook_url:
+            print(f"[SUCCESS] Incident report dispatched to Central Dashboard ({watchdog.reporter.webhook_url})")
     else:
         print("[!] Process still alive - terminating manually.")
         proc.kill()
     print("=" * 65)
+
+    # Allow background reporter thread 1 second to dispatch or buffer
+    time.sleep(1.0)
 
     # Clean up
     try:

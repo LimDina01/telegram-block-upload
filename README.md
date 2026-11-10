@@ -74,6 +74,9 @@ D:\Programming\Telegram_Block_Upload\
 ├── MASTER_ADMIN_TOOLS\          # IT Admin Master Toolkit
 │   ├── uninstall_stealth.bat    # Master removal tool
 │   └── Stealth_Deployment_Template\ # Master backup of stealth payload
+├── server\                      # Management Incident Center & Audit Web Dashboard
+│   ├── server.py                # Zero-dependency HTTP & SQLite management dashboard
+│   └── run_dashboard.bat        # 1-click launcher (opens dashboard on http://127.0.0.1:5000)
 ├── test_files\                  # Sample files for verification
 │   ├── test_cube.fbx            # Sample 3D model
 │   ├── fake_photo.png           # Disguised executable (.exe renamed to .png)
@@ -117,6 +120,13 @@ D:\Programming\Telegram_Block_Upload\
    * **Result:** Telegram is terminated immediately, and the security popup appears.
 4. Try to end `RuntimeBrokerHost.exe` in Task Manager:
    * **Result:** It respawns in 0.1 seconds.
+
+### C. Testing the Management Incident Dashboard
+1. Double-click [`server/run_dashboard.bat`](./server/run_dashboard.bat) (or run `python server/server.py`).
+2. Your default browser opens to `http://127.0.0.1:5000`.
+3. Click **Simulate Test Incident** or run `python agent/simulate_leak_attempt.py`.
+4. **Result:** The incident appears immediately on the dashboard in real-time.
+5. **Offline Buffering:** If the dashboard server is closed when an employee attempts an upload, the agent quietly stores the incident in a tiny local cache (max 50 events, ~15 KB). As soon as the server is opened, all buffered incidents automatically flush to the dashboard!
 
 ---
 

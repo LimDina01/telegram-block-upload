@@ -56,7 +56,7 @@ DEFAULT_CONFIG = {
     "show_user_popup": True,
     "poll_interval_ms": 150,
     "log_file": "dlp_violations.log",
-    "webhook_url": ""
+    "webhook_url": "http://127.0.0.1:5000/api/report"
 }
 
 # Locate directory (works both in Python script and compiled PyInstaller .exe)
@@ -151,22 +151,107 @@ def check_magic_signature(file_path: str, magic_signatures: List[Dict[str, str]]
     return None
 
 
-def send_webhook_alert(webhook_url: str, payload: Dict[str, Any]) -> None:
-    if not webhook_url:
-        return
-    def _post():
-        try:
-            import urllib.request
-            req = urllib.request.Request(
-                webhook_url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception as e:
-            print(f"[WARN] Failed to dispatch webhook alert: {e}", file=sys.stderr)
+class IncidentReporter:
+    """
+    Asynchronous Incident Dispatcher with Smart Offline Buffer.
+    - Delivers incident JSON to the Central Management Dashboard via HTTP POST.
+    - If server is offline, securely queues incidents locally in a capped buffer (max 50 events, <=15KB).
+    - Automatically drains the buffer and delivers all pending logs when the server starts.
+    """
+    def __init__(self, webhook_url: str, cache_dir: str, max_buffer_size: int = 50):
+        self.webhook_url = webhook_url
+        self.max_buffer_size = max_buffer_size
+        self.lock = threading.Lock()
+        self.wake_event = threading.Event()
+        self.running = True
 
-    threading.Thread(target=_post, daemon=True).start()
+        # Cache file path in script directory or user temp
+        try:
+            self.cache_file = os.path.join(cache_dir, "pending_dlp_events.json")
+            with open(self.cache_file, "a", encoding="utf-8") as _:
+                pass
+        except Exception:
+            fallback = os.environ.get("LOCALAPPDATA", os.environ.get("TEMP", cache_dir))
+            self.cache_file = os.path.join(fallback, "pending_dlp_events.json")
+
+        self.queue: List[Dict[str, Any]] = self._load_cache()
+
+        # Start background worker thread
+        self.worker_thread = threading.Thread(target=self._worker_loop, daemon=True)
+        self.worker_thread.start()
+
+    def _load_cache(self) -> List[Dict[str, Any]]:
+        try:
+            if os.path.exists(self.cache_file):
+                with open(self.cache_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        return data[-self.max_buffer_size:]
+        except Exception:
+            pass
+        return []
+
+    def _save_cache(self):
+        try:
+            with open(self.cache_file, "w", encoding="utf-8") as f:
+                json.dump(self.queue, f)
+        except Exception:
+            pass
+
+    def enqueue(self, event: Dict[str, Any]):
+        if not self.webhook_url:
+            return
+        with self.lock:
+            self.queue.append(event)
+            # Strictly enforce max buffer size (FIFO drop oldest so it never gets heavy)
+            if len(self.queue) > self.max_buffer_size:
+                self.queue = self.queue[-self.max_buffer_size:]
+            self._save_cache()
+        # Wake up worker to send immediately
+        self.wake_event.set()
+
+    def _worker_loop(self):
+        import urllib.request
+        while self.running:
+            if not self.webhook_url:
+                time.sleep(5)
+                continue
+
+            event_to_send = None
+            with self.lock:
+                if self.queue:
+                    event_to_send = self.queue[0]
+
+            if not event_to_send:
+                self.wake_event.wait(timeout=5)
+                self.wake_event.clear()
+                continue
+
+            # Attempt delivery to server
+            delivered = False
+            try:
+                req = urllib.request.Request(
+                    self.webhook_url,
+                    data=json.dumps(event_to_send).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    if resp.status in (200, 201):
+                        delivered = True
+            except Exception:
+                # Server is offline or unreachable - wait before retrying
+                delivered = False
+
+            if delivered:
+                with self.lock:
+                    if self.queue and self.queue[0] == event_to_send:
+                        self.queue.pop(0)
+                        self._save_cache()
+                # Deliver next pending event without delay
+                continue
+            else:
+                # Server offline, sleep 5 seconds before retrying
+                time.sleep(5)
 
 
 def protect_current_process():
@@ -215,6 +300,7 @@ class DLPWatchdog:
         self.logger = setup_logger(config.get("log_file", "dlp_violations.log"))
         self.webhook_url = config.get("webhook_url", "")
         self.hostname = socket.gethostname()
+        self.reporter = IncidentReporter(self.webhook_url, SCRIPT_DIR) if self.webhook_url else None
 
     def is_violation(self, file_path: str) -> Optional[str]:
         """
@@ -295,6 +381,7 @@ class DLPWatchdog:
         file_hash = calculate_partial_sha256(file_path)
 
         incident_info = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "event": "DATA_LEAK_PREVENTION_TRIGGER",
             "reason": reason,
             "process": name,
@@ -303,6 +390,7 @@ class DLPWatchdog:
             "user": username,
             "host": self.hostname,
             "file": file_path,
+            "file_name": os.path.basename(file_path),
             "file_size_bytes": file_size,
             "partial_sha256": file_hash,
             "action_taken": self.action
@@ -312,9 +400,9 @@ class DLPWatchdog:
         log_msg = f'"event": "DLP_VIOLATION", "process": "{name}", "pid": {pid}, "user": "{username}", "file": "{file_path.replace(chr(92), "/")}", "reason": "{reason}", "action": "{self.action}"'
         self.logger.warning(log_msg)
 
-        # Dispatch webhook if configured
-        if self.webhook_url:
-            send_webhook_alert(self.webhook_url, incident_info)
+        # Enqueue for delivery to central management dashboard (with smart offline buffer)
+        if self.reporter:
+            self.reporter.enqueue(incident_info)
 
         # Execute enforcement action
         if self.action == "kill":
