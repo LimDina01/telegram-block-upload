@@ -1,0 +1,24 @@
+Windows Registry Editor Version 5.00
+
+; ==============================================================================
+; Enterprise Chrome & Edge Hardening for Telegram DLP Extension
+; Forces installation, blocks disabling/uninstalling, and disables Incognito bypass
+; ==============================================================================
+
+; --- Google Chrome Policies ---
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome]
+"IncognitoModeAvailability"=dword:00000001
+"DeveloperToolsAvailability"=dword:00000002
+
+; --- Microsoft Edge Policies ---
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge]
+"InPrivateModeAvailability"=dword:00000001
+"DeveloperToolsAvailability"=dword:00000002
+
+; NOTE: Once the extension is packaged as a .crx or published to the Chrome Web Store,
+; add the extension ID and update URL to the ExtensionInstallForcelist key:
+; [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist]
+; "1"="<EXTENSION_ID>;https://clients2.google.com/service/update2/crx"
+; [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist]
+; "1"="<EXTENSION_ID>;https://edge.microsoft.com/extensionwebstorebase/v1/crx"
+

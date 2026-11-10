@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Corporate DLP Guardian - 3D File Leak Protection",
+  "version": "1.0.0",
+  "description": "Prevents unauthorized uploads of 3D models and sensitive archives across Telegram Web and all file upload sites.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "rules.js",
+        "content.js"
+      ],
+      "css": [
+        "overlay.css"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    }
+  ]
+}

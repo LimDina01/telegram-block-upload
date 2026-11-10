@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Telegram DLP Guardian - Upload Interceptor Test Lab</title>
+  <link rel="stylesheet" href="overlay.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 720px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #38bdf8;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 30px;
+    }
+    .dropzone {
+      border: 2px dashed #475569;
+      border-radius: 12px;
+      padding: 50px 20px;
+      text-align: center;
+      background: #1e293b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 24px;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #38bdf8;
+      background: #1e293b;
+    }
+    .dropzone svg {
+      width: 48px;
+      height: 48px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    .dropzone h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+    }
+    .dropzone p {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+    }
+    .test-actions {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover {
+      background: #1d4ed8;
+    }
+    .file-input-wrapper {
+      position: relative;
+    }
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .instructions {
+      background: #1e293b;
+      border-left: 4px solid #38bdf8;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .instructions code {
+      background: #0f172a;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+    }
+    .log-card {
+      background: #090d16;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #10b981;
+      height: 120px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Telegram DLP Interceptor - Test Harness</h1>
+    <p class="subtitle">Simulates Telegram Web upload actions to verify DLP interception without needing a live Telegram account.</p>
+
+    <div class="dropzone" id="drop-target">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+      </svg>
+      <h3>Drag and Drop Test Area</h3>
+      <p>Drag any <code>.fbx</code>, <code>.blend</code>, <code>.max</code>, <code>.zip</code>, or normal file here.</p>
+    </div>
+
+    <div class="test-actions">
+      <div class="file-input-wrapper">
+        <button class="btn">
+          Select File to Upload
+        </button>
+        <input type="file" id="test-file-input">
+      </div>
+    </div>
+
+    <div class="instructions">
+      <strong>How to Test:</strong><br>
+      1. Load this extension in <code>chrome://extensions</code>.<br>
+      2. If testing safe files (e.g. <code>.png</code>, <code>.txt</code>), the upload succeeds and is logged below.<br>
+      3. If testing 3D files (e.g. <code>model.fbx</code>, <code>scene.blend</code>, <code>archive.zip</code>) or disguised files (e.g. FBX renamed to <code>test.jpg</code>), the DLP extension stops the event immediately and presents the red alert overlay.
+    </div>
+
+    <div class="log-card" id="event-log">
+      [READY] DLP Test Harness Loaded. Waiting for user file actions...
+    </div>
+  </div>
+
+  <script src="rules.js"></script>
+  <script src="content.js"></script>
+  <script>
+    const logEl = document.getElementById('event-log');
+    function log(msg) {
+      logEl.innerHTML += '<br>' + '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    const dropTarget = document.getElementById('drop-target');
+    dropTarget.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropTarget.classList.add('dragover');
+    });
+    dropTarget.addEventListener('dragleave', () => dropTarget.classList.remove('dragover'));
+    dropTarget.addEventListener('drop', (e) => {
+      dropTarget.classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        log('SAFE FILE ALLOWED: ' + e.dataTransfer.files[0].name + ' (' + e.dataTransfer.files[0].size + ' bytes)');
+      }
+    });
+
+    document.getElementById('test-file-input').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        log('SAFE FILE ALLOWED: ' + e.target.files[0].name + ' (' + e.target.files[0].size + ' bytes)');
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,21 @@
+<AppLockerPolicy Version="1">
+  <RuleCollection Type="Exe" EnforcementMode="AuditOnly">
+    <!-- Deny Rule for Telegram Desktop Binary -->
+    <FileHashRule Id="f1a8c8e2-54b1-4d37-8b2b-927161bca891" Name="Block Telegram Desktop Executable" Description="Blocks Telegram Desktop to force audited web DLP compliance." UserOrGroupSid="S-1-1-0" Action="Deny">
+      <Conditions>
+        <FilePublisherCondition PublisherName="O=TELEGRAM FZ-LLC, L=DUBAI, C=AE" ProductName="TELEGRAM DESKTOP" BinaryName="TELEGRAM.EXE">
+          <BinaryVersionRange LowSection="*" HighSection="*" />
+        </FilePublisherCondition>
+      </Conditions>
+    </FileHashRule>
+    <!-- Deny by File Path as fallback (AppData, Downloads, Program Files) -->
+    <FilePathRule Id="92f2b3e8-8b9d-48ef-bfca-80a5bfcf1432" Name="Block Telegram by Path" Description="Blocks Telegram executable locations" UserOrGroupSid="S-1-1-0" Action="Deny">
+      <Conditions>
+        <FilePathCondition Path="%USERPROFILE%\AppData\Roaming\Telegram Desktop\Telegram.exe" />
+        <FilePathCondition Path="%LOCALAPPDATA%\TelegramDesktop\Telegram.exe" />
+        <FilePathCondition Path="*\Telegram.exe" />
+      </Conditions>
+    </FilePathRule>
+  </RuleCollection>
+</AppLockerPolicy>
+

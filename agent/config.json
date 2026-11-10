@@ -1,0 +1,89 @@
+{
+  "mode": "whitelist",
+  "target_processes": [
+    "Telegram.exe",
+    "TelegramInternal.exe"
+  ],
+  "allowed_extensions": [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".pdf",
+    ".txt",
+    ".docx",
+    ".doc",
+    ".xlsx",
+    ".xls",
+    ".pptx",
+    ".ppt",
+    ".csv"
+  ],
+  "blocked_extensions": [
+    ".fbx",
+    ".obj",
+    ".blend",
+    ".max",
+    ".mb",
+    ".ma",
+    ".c4d",
+    ".ztl",
+    ".zpr",
+    ".step",
+    ".stp",
+    ".iges",
+    ".igs",
+    ".3ds",
+    ".stl",
+    ".glb",
+    ".gltf",
+    ".dae",
+    ".ply",
+    ".abc",
+    ".usd",
+    ".usda",
+    ".usdc",
+    ".usdz",
+    ".bvh",
+    ".dwg",
+    ".dxf",
+    ".zip",
+    ".rar",
+    ".7z",
+    ".tar",
+    ".gz"
+  ],
+  "magic_signatures": [
+    {
+      "name": "Blender 3D Project",
+      "hex_prefix": "424C454E444552"
+    },
+    {
+      "name": "Kaydara FBX Binary",
+      "hex_prefix": "4B617964617261204642582042696E617279"
+    },
+    {
+      "name": "glTF Binary 3D",
+      "hex_prefix": "676C5446"
+    },
+    {
+      "name": "ZIP Archive (potential 3D bundle)",
+      "hex_prefix": "504B0304"
+    },
+    {
+      "name": "7-Zip Archive",
+      "hex_prefix": "377ABCAF271C"
+    },
+    {
+      "name": "RAR Archive",
+      "hex_prefix": "526172211A07"
+    }
+  ],
+  "sensitive_directories": [],
+  "action": "kill",
+  "show_user_popup": true,
+  "poll_interval_ms": 150,
+  "log_file": "dlp_violations.log",
+  "webhook_url": ""
+}

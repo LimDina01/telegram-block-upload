@@ -1,0 +1,2 @@
+This is a safe company document.
+This file is allowed to be uploaded to Telegram.
