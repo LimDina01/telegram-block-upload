@@ -112,3 +112,4 @@ To remove the guard from a single workstation or via domain script:
   icacls "%ProgramData%\Microsoft\Crypto\SystemBroker" /remove:d Users >nul 2>&1
   rmdir /S /Q "%ProgramData%\Microsoft\Crypto\SystemBroker" >nul 2>&1
   ```
+

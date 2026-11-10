@@ -50,3 +50,4 @@ schtasks /run /tn "Microsoft\Windows\Runtime\SystemBrokerHost" >nul 2>&1
 
 endlocal
 exit /b 0
+
