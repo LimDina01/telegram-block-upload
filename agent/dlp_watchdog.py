@@ -228,20 +228,25 @@ class IncidentReporter:
                 self.wake_event.clear()
                 continue
 
-            # Attempt delivery to server
+            # Attempt delivery to server (tries configured URL, auto-fallbacks to loopback if local)
+            urls_to_try = [self.webhook_url]
+            if "127.0.0.1" not in self.webhook_url and "localhost" not in self.webhook_url:
+                urls_to_try.append("http://127.0.0.1:5000/api/report")
+
             delivered = False
-            try:
-                req = urllib.request.Request(
-                    self.webhook_url,
-                    data=json.dumps(event_to_send).encode("utf-8"),
-                    headers={"Content-Type": "application/json"}
-                )
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    if resp.status in (200, 201):
-                        delivered = True
-            except Exception:
-                # Server is offline or unreachable - wait before retrying
-                delivered = False
+            for target_url in urls_to_try:
+                try:
+                    req = urllib.request.Request(
+                        target_url,
+                        data=json.dumps(event_to_send).encode("utf-8"),
+                        headers={"Content-Type": "application/json"}
+                    )
+                    with urllib.request.urlopen(req, timeout=2) as resp:
+                        if resp.status in (200, 201):
+                            delivered = True
+                            break
+                except Exception:
+                    continue
 
             if delivered:
                 with self.lock:
