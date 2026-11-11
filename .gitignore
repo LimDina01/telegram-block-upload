@@ -19,10 +19,17 @@ ENV/
 # Logs & Audit Output (Keep repository clean)
 *.log
 dlp_violations.log
+*.db
+pending_dlp_events.json
+test_demo_sandbox/
 
 # Temporary test archives & large sample files
 *.zip
 test_large.fbx
+test_files/large_*
+test_files/disguised_*
+test_files/valid_highres_*
+Teammate_Testing_Package/
 *.tmp
 *.bak
 
