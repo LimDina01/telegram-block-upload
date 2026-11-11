@@ -331,6 +331,8 @@ class DLPWatchdog:
             return None
         if "telegram desktop" in norm_path_lower or "telegramdesktop" in norm_path_lower:
             return None
+        if "telegram downloads" in norm_path_lower or "telegram_downloads" in norm_path_lower:
+            return None
         if "\\shadercache" in norm_path_lower:
             return None
         if "\\appdata\\local\\temp\\" in norm_path_lower or "\\appdata\\local\\temp" in norm_path_lower:
@@ -338,12 +340,20 @@ class DLPWatchdog:
         if "\\appdata\\roaming\\microsoft\\" in norm_path_lower or "\\appdata\\local\\microsoft\\" in norm_path_lower:
             return None
 
-        # 3. Sensitive Directory check
-        for sdir in self.sensitive_directories:
-            if norm_path_lower.startswith(sdir):
-                return f"Accessed sensitive directory: {sdir}"
-
         _, ext = os.path.splitext(norm_path_lower)
+
+        # 3. Ignore Incoming Telegram Downloads & Temp Download files
+        # Prevents killing Telegram when an employee receives / downloads files
+        if ext in ('.part', '.tdesktop', '.crdownload', '.download', '.tmp'):
+            return None
+
+        # Check if file is freshly created by Telegram (Save As download in progress)
+        try:
+            stat = os.stat(file_path)
+            if (time.time() - stat.st_ctime) < 10 and stat.st_size == 0:
+                return None
+        except Exception:
+            pass
 
         # 4. If file has NO extension (e.g. named pipes, device handles, OS locks):
         # Do NOT kill on whitelist. Only kill if it actually contains 3D binary magic bytes!

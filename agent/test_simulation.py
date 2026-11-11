@@ -67,6 +67,23 @@ def test_dlp_detection():
     assert reason is not None and "Kaydara FBX" in reason, f"Expected magic byte detection, got: {reason}"
     print(f" -> PASSED: Disguise thwarted! Detected: {reason}")
 
+    print("[TEST 5] Testing incoming download in Telegram Desktop folder (must NOT be blocked)...")
+    dl_zip = os.path.join(test_dir, "Telegram Desktop", "received_archive.zip")
+    os.makedirs(os.path.dirname(dl_zip), exist_ok=True)
+    with open(dl_zip, "wb") as f:
+        f.write(b"PK\x03\x04dummy")
+    reason = watchdog.is_violation(dl_zip)
+    assert reason is None, f"Expected received download to be allowed, but got: {reason}"
+    print(" -> PASSED: Incoming download allowed!")
+
+    print("[TEST 6] Testing temp download part file (must NOT be blocked)...")
+    part_file = os.path.join(test_dir, "incoming_character.fbx.part")
+    with open(part_file, "wb") as f:
+        f.write(b"Kaydara FBX Binary")
+    reason = watchdog.is_violation(part_file)
+    assert reason is None, f"Expected .part temp file to be allowed, but got: {reason}"
+    print(" -> PASSED: Incomplete download (.part) allowed!")
+
     print("\n[SUCCESS] All DLP detection tests passed perfectly!\n")
 
     # Clean up test files
