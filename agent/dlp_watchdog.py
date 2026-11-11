@@ -57,9 +57,11 @@ DEFAULT_CONFIG = {
     "sensitive_directories": [],
     "action": "kill",
     "show_user_popup": True,
+    "auto_relaunch": True,
+    "relaunch_delay_seconds": 1.5,
     "poll_interval_ms": 50,
     "log_file": "dlp_violations.log",
-    "webhook_url": "http://127.0.0.1:5000/api/report"
+    "webhook_url": "http://172.16.230.17:5000/api/report"
 }
 
 # Locate directory (works both in Python script and compiled PyInstaller .exe)
@@ -290,6 +292,34 @@ def protect_current_process():
         pass
 
 
+def relaunch_application(exe_path: str, delay: float = 1.5) -> None:
+    """
+    Relaunches the application on the active user's desktop after a brief delay.
+    Uses explorer.exe to ensure the application opens inside the user's interactive
+    desktop session (Session 1), even when watchdog runs under elevated or SYSTEM rights.
+    """
+    def _worker():
+        time.sleep(delay)
+        if not exe_path or not os.path.isfile(exe_path):
+            return
+        try:
+            # 1. First attempt: Launch via explorer.exe (guarantees interactive desktop session)
+            subprocess.Popen(["explorer.exe", exe_path])
+        except Exception:
+            try:
+                # 2. Fallback: os.startfile
+                os.startfile(exe_path)
+            except Exception:
+                try:
+                    # 3. Direct subprocess invocation
+                    subprocess.Popen([exe_path])
+                except Exception:
+                    pass
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+
 class DLPWatchdog:
     def __init__(self, config: Dict[str, Any]):
         protect_current_process()
@@ -304,6 +334,8 @@ class DLPWatchdog:
         ]
         self.action = config.get("action", "kill").lower()
         self.show_popup = config.get("show_user_popup", True)
+        self.auto_relaunch = config.get("auto_relaunch", True)
+        self.relaunch_delay = float(config.get("relaunch_delay_seconds", 1.5))
         self.poll_interval = max(0.05, config.get("poll_interval_ms", 150) / 1000.0)
         self.logger = setup_logger(config.get("log_file", "dlp_violations.log"))
         self.webhook_url = config.get("webhook_url", "")
@@ -430,19 +462,25 @@ class DLPWatchdog:
             try:
                 proc.kill()
                 self.logger.info(f'"event": "PROCESS_TERMINATED", "pid": {pid}, "process": "{name}"')
+                if self.auto_relaunch and exe_path and exe_path != "N/A" and os.path.isfile(exe_path):
+                    relaunch_application(exe_path, delay=self.relaunch_delay)
             except Exception as e:
                 self.logger.error(f'"event": "TERMINATION_FAILED", "pid": {pid}, "error": "{str(e)}"')
 
         # Notify user on desktop
         if self.show_popup:
             popup_title = "SECURITY POLICY ALERT - UPLOAD BLOCKED"
+            if self.auto_relaunch:
+                action_desc = "The upload was aborted and the application has been restarted for you."
+            else:
+                action_desc = "The application has been closed and this event has been logged."
             popup_msg = (
                 f"A security violation was detected.\n\n"
                 f"Application: {name} (PID: {pid})\n"
                 f"Attempted File: {os.path.basename(file_path)}\n"
                 f"Reason: {reason}\n\n"
                 f"Company policy prohibits sharing proprietary 3D assets or archives.\n"
-                f"The application has been closed and this event has been logged."
+                f"{action_desc}"
             )
             show_alert_popup(popup_title, popup_msg)
 

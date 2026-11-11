@@ -88,6 +88,8 @@
   "sensitive_directories": [],
   "action": "kill",
   "show_user_popup": true,
+  "auto_relaunch": true,
+  "relaunch_delay_seconds": 1.5,
   "poll_interval_ms": 50,
   "log_file": "dlp_violations.log",
   "webhook_url": "http://172.16.230.17:5000/api/report"
