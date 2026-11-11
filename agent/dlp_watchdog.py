@@ -19,6 +19,8 @@ import logging
 import hashlib
 import threading
 import ctypes
+import subprocess
+import urllib.request
 from typing import Dict, Any, List, Optional
 import psutil
 
@@ -483,6 +485,7 @@ def run_supervisor():
     """
     exe = sys.executable if getattr(sys, 'frozen', False) else [sys.executable, os.path.abspath(__file__)]
     my_pid = os.getpid()
+    CREATE_NO_WINDOW = 0x08000000 if os.name == 'nt' else 0
 
     while True:
         try:
@@ -491,7 +494,7 @@ def run_supervisor():
             else:
                 cmd = [exe, "--worker", f"--parent={my_pid}"]
 
-            p = subprocess.Popen(cmd)
+            p = subprocess.Popen(cmd, creationflags=CREATE_NO_WINDOW)
             # Wait for worker. If killed in Task Manager, wait() returns immediately!
             p.wait()
             # Revive immediately!
@@ -518,10 +521,11 @@ def watch_and_revive_supervisor(parent_pid: int):
                 kernel32.CloseHandle(hParent)
                 if wait_res == 0:  # WAIT_OBJECT_0: Supervisor actually terminated!
                     exe = sys.executable if getattr(sys, 'frozen', False) else [sys.executable, os.path.abspath(__file__)]
+                    CREATE_NO_WINDOW = 0x08000000 if os.name == 'nt' else 0
                     if isinstance(exe, list):
-                        subprocess.Popen(exe)
+                        subprocess.Popen(exe, creationflags=CREATE_NO_WINDOW)
                     else:
-                        subprocess.Popen([exe])
+                        subprocess.Popen([exe], creationflags=CREATE_NO_WINDOW)
         except Exception:
             pass
 

