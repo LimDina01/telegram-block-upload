@@ -159,21 +159,55 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
     <title>DLP Incident Management Center</title>
     <style>
         :root {
+            /* Night (Dark) Theme - Default */
             --bg-primary: #0f172a;
             --bg-card: #1e293b;
             --bg-card-hover: #334155;
             --border-color: #334155;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --thead-bg: rgba(15, 23, 42, 0.75);
             --accent-red: #ef4444;
             --accent-red-bg: rgba(239, 68, 68, 0.15);
             --accent-green: #10b981;
             --accent-green-bg: rgba(16, 185, 129, 0.15);
             --accent-blue: #3b82f6;
             --accent-amber: #f59e0b;
+            --code-pill-bg: #0f172a;
+            --code-pill-color: #38bdf8;
+            --input-bg: #1e293b;
+            --table-hover: rgba(51, 65, 85, 0.4);
+            --badge-gray-bg: #334155;
+            --badge-gray-text: #cbd5e1;
+            --file-color: #f43f5e;
         }
+
+        [data-theme="light"] {
+            /* Day (Light) Theme - Crisp & Clean */
+            --bg-primary: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --thead-bg: #f1f5f9;
+            --accent-red: #e11d48;
+            --accent-red-bg: rgba(225, 29, 72, 0.1);
+            --accent-green: #059669;
+            --accent-green-bg: rgba(5, 150, 105, 0.1);
+            --accent-blue: #2563eb;
+            --accent-amber: #d97706;
+            --code-pill-bg: #f1f5f9;
+            --code-pill-color: #0284c7;
+            --input-bg: #ffffff;
+            --table-hover: #f8fafc;
+            --badge-gray-bg: #e2e8f0;
+            --badge-gray-text: #475569;
+            --file-color: #e11d48;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg-primary); color: var(--text-main); padding: 24px; min-height: 100vh; }
+        body { background-color: var(--bg-primary); color: var(--text-main); padding: 24px; min-height: 100vh; transition: background-color 0.2s ease, color 0.2s ease; }
         
         .container { max-width: 1400px; margin: 0 auto; }
         
@@ -185,13 +219,31 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
         .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
         
         .header-actions { display: flex; align-items: center; gap: 12px; }
+        .theme-toggle-btn {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .theme-toggle-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+        }
         .status-pill { display: flex; align-items: center; gap: 8px; background: var(--accent-green-bg); color: var(--accent-green); padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3); }
         .pulse-dot { width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green); animation: pulse 1.8s infinite; }
         @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
         /* Stats Cards */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px 20px; transition: transform 0.2s, border-color 0.2s; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px 20px; transition: transform 0.2s, border-color 0.2s, background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
         .stat-card:hover { transform: translateY(-2px); border-color: var(--accent-blue); }
         .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; }
         .stat-value { font-size: 30px; font-weight: 700; color: var(--text-main); }
@@ -203,7 +255,7 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
         /* Toolbar */
         .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
         .search-box { flex: 1; min-width: 260px; max-width: 450px; position: relative; }
-        .search-input { width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px 10px 38px; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s; }
+        .search-input { width: 100%; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px 10px 38px; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s, background-color 0.2s; }
         .search-input:focus { border-color: var(--accent-blue); }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-muted); }
 
@@ -217,27 +269,27 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
         .btn-danger:hover { background: var(--accent-red); color: white; }
 
         /* Table */
-        .table-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+        .table-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-        thead { background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid var(--border-color); }
+        thead { background: var(--thead-bg); border-bottom: 1px solid var(--border-color); }
         th { padding: 14px 16px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
         td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         tbody tr { transition: background 0.15s; }
-        tbody tr:hover { background: rgba(51, 65, 85, 0.4); }
+        tbody tr:hover { background: var(--table-hover); }
         .new-row-flash { animation: flashRed 1.8s ease-out; }
         @keyframes flashRed { 0% { background: rgba(239, 68, 68, 0.35); } 100% { background: transparent; } }
 
         /* Badges & Elements */
         .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .badge-red { background: var(--accent-red-bg); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.4); }
-        .badge-gray { background: #334155; color: #cbd5e1; }
-        .code-pill { background: #0f172a; padding: 3px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #38bdf8; }
+        .badge-gray { background: var(--badge-gray-bg); color: var(--badge-gray-text); border: 1px solid var(--border-color); }
+        .code-pill { background: var(--code-pill-bg); color: var(--code-pill-color); border: 1px solid var(--border-color); padding: 3px 7px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
         .host-user { display: flex; flex-direction: column; }
         .host-name { font-weight: 600; color: var(--text-main); }
         .user-name { font-size: 11px; color: var(--text-muted); }
         .file-info { display: flex; flex-direction: column; }
-        .file-name { font-weight: 600; color: #f43f5e; display: flex; align-items: center; gap: 6px; }
+        .file-name { font-weight: 600; color: var(--file-color); display: flex; align-items: center; gap: 6px; }
         .file-path { font-size: 11px; color: var(--text-muted); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -258,6 +310,10 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
                 </div>
             </div>
             <div class="header-actions">
+                <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Switch Day/Night Mode">
+                    <span id="themeIcon">☀️</span>
+                    <span id="themeLabel">Day Mode</span>
+                </button>
                 <div class="status-pill">
                     <span class="pulse-dot"></span>
                     <span>MONITOR LISTENING</span>
@@ -415,7 +471,7 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
                 html += `
                     <tr class="${isFlash ? 'new-row-flash' : ''}">
                         <td><span class="badge badge-red">BLOCKED</span></td>
-                        <td style="color: #cbd5e1; font-family: ui-monospace, monospace;">${escapeHtml(item.timestamp)}</td>
+                        <td style="color: var(--text-main); font-family: ui-monospace, monospace;">${escapeHtml(item.timestamp)}</td>
                         <td>
                             <div class="host-user">
                                 <span class="host-name">💻 ${escapeHtml(item.hostname || 'Unknown')}</span>
@@ -424,7 +480,7 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
                         </td>
                         <td>
                             <span class="code-pill">${escapeHtml(item.process)}</span>
-                            ${item.pid ? `<span style="font-size: 11px; color: #64748b; margin-left: 4px;">#${item.pid}</span>` : ''}
+                            ${item.pid ? `<span style="font-size: 11px; color: var(--text-muted); margin-left: 4px;">#${item.pid}</span>` : ''}
                         </td>
                         <td>
                             <div class="file-info">
@@ -433,7 +489,7 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
                             </div>
                         </td>
                         <td><span class="badge badge-gray">${escapeHtml(item.file_size_str || 'N/A')}</span></td>
-                        <td style="color: #cbd5e1; font-size: 12px;">${escapeHtml(item.reason || 'DLP Policy Breach')}</td>
+                        <td style="color: var(--text-muted); font-size: 12px;">${escapeHtml(item.reason || 'DLP Policy Breach')}</td>
                     </tr>
                 `;
             });
@@ -496,6 +552,34 @@ HTML_DASHBOARD = r"""<!DOCTYPE html>
         function exportCSV() {
             window.location.href = '/api/export';
         }
+
+        // Day / Night Theme Management
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            try { localStorage.setItem('dlp_theme', theme); } catch(e) {}
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            if (theme === 'light') {
+                if (icon) icon.innerText = '🌙';
+                if (label) label.innerText = 'Night Mode';
+            } else {
+                if (icon) icon.innerText = '☀️';
+                if (label) label.innerText = 'Day Mode';
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'light' ? 'dark' : 'light';
+            applyTheme(next);
+        }
+
+        // Apply saved theme immediately on load
+        (function() {
+            let saved = 'dark';
+            try { saved = localStorage.getItem('dlp_theme') || 'dark'; } catch(e) {}
+            applyTheme(saved);
+        })();
 
         // Initialize and start live polling (every 2.5s)
         fetchIncidents();
