@@ -49,6 +49,14 @@ def test_dlp_detection():
     assert reason is not None and ".blend" in reason, f"Expected .blend block, got: {reason}"
     print(f" -> PASSED: {reason}")
 
+    print("[TEST 2B] Testing Rhino .3dm file...")
+    rhino_file = os.path.join(test_dir, "product_design.3dm")
+    with open(rhino_file, "wb") as f:
+        f.write(b"3D Model Geometry, Version 7.0")
+    reason = watchdog.is_violation(rhino_file)
+    assert reason is not None and ".3dm" in reason, f"Expected .3dm block, got: {reason}"
+    print(f" -> PASSED: {reason}")
+
     print("[TEST 3] Testing safe .txt file...")
     reason = watchdog.is_violation(safe_txt)
     assert reason is None, f"Expected safe file to pass, but got: {reason}"

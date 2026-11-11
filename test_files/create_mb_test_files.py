@@ -12,7 +12,7 @@ import os
 import struct
 import zlib
 
-TARGET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_files")
+TARGET_DIR = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(TARGET_DIR, exist_ok=True)
 
 chunk_1mb = os.urandom(1024 * 1024)
@@ -76,5 +76,15 @@ with open(zip_path, "wb") as f:
     for _ in range(30):
         f.write(chunk_1mb)
 print(f"[+] Created: {zip_path} ({os.path.getsize(zip_path) / (1024*1024):.1f} MB)")
+
+# 5. Realistic 20MB Rhino 3D Model (.3dm)
+rhino_path = os.path.join(TARGET_DIR, "sample_rhino_design.3dm")
+print(f"[*] Generating {rhino_path} (~20 MB)...")
+with open(rhino_path, "wb") as f:
+    # Standard Rhino 3D Model header
+    f.write(b"3D Model Geometry, Version 7.0 (OpenNURBS)\x00\x00\x00")
+    for _ in range(20):
+        f.write(chunk_1mb)
+print(f"[+] Created: {rhino_path} ({os.path.getsize(rhino_path) / (1024*1024):.1f} MB)")
 
 print("\n[SUCCESS] All MB-sized test files generated successfully!")

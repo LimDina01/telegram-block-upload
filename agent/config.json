@@ -35,6 +35,7 @@
     ".iges",
     ".igs",
     ".3ds",
+    ".3dm",
     ".stl",
     ".glb",
     ".gltf",
@@ -55,6 +56,10 @@
     ".gz"
   ],
   "magic_signatures": [
+    {
+      "name": "Rhino 3D Model",
+      "hex_prefix": "3344204D6F64656C"
+    },
     {
       "name": "Blender 3D Project",
       "hex_prefix": "424C454E444552"
@@ -83,7 +88,7 @@
   "sensitive_directories": [],
   "action": "kill",
   "show_user_popup": true,
-  "poll_interval_ms": 150,
+  "poll_interval_ms": 50,
   "log_file": "dlp_violations.log",
   "webhook_url": "http://127.0.0.1:5000/api/report"
 }

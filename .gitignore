@@ -25,6 +25,8 @@ test_demo_sandbox/
 
 # Temporary test archives & large sample files
 *.zip
+*.3dm
+agent/test_files/
 test_large.fbx
 test_files/large_*
 test_files/disguised_*

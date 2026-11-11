@@ -38,11 +38,12 @@ DEFAULT_CONFIG = {
     ],
     "blocked_extensions": [
         ".fbx", ".obj", ".blend", ".max", ".mb", ".ma", ".c4d",
-        ".ztl", ".zpr", ".step", ".stp", ".iges", ".igs", ".3ds",
+        ".ztl", ".zpr", ".step", ".stp", ".iges", ".igs", ".3ds", ".3dm",
         ".stl", ".glb", ".gltf", ".dae", ".ply", ".abc", ".usd",
         ".zip", ".rar", ".7z", ".tar", ".gz"
     ],
     "magic_signatures": [
+        {"name": "Rhino 3D Model", "hex_prefix": "3344204D6F64656C"},
         {"name": "Blender 3D Project", "hex_prefix": "424C454E444552"},
         {"name": "Kaydara FBX Binary", "hex_prefix": "4B617964617261204642582042696E617279"},
         {"name": "glTF Binary 3D", "hex_prefix": "676C5446"},
@@ -54,7 +55,7 @@ DEFAULT_CONFIG = {
     "sensitive_directories": [],
     "action": "kill",
     "show_user_popup": True,
-    "poll_interval_ms": 150,
+    "poll_interval_ms": 50,
     "log_file": "dlp_violations.log",
     "webhook_url": "http://127.0.0.1:5000/api/report"
 }
