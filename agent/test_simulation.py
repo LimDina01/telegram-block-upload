@@ -67,22 +67,38 @@ def test_dlp_detection():
     assert reason is not None and "Kaydara FBX" in reason, f"Expected magic byte detection, got: {reason}"
     print(f" -> PASSED: Disguise thwarted! Detected: {reason}")
 
-    print("[TEST 5] Testing incoming download in Telegram Desktop folder (must NOT be blocked)...")
-    dl_zip = os.path.join(test_dir, "Telegram Desktop", "received_archive.zip")
-    os.makedirs(os.path.dirname(dl_zip), exist_ok=True)
-    with open(dl_zip, "wb") as f:
-        f.write(b"PK\x03\x04dummy")
-    reason = watchdog.is_violation(dl_zip)
-    assert reason is None, f"Expected received download to be allowed, but got: {reason}"
-    print(" -> PASSED: Incoming download allowed!")
+    print("[TEST 5] Testing in-flight download with .tdesktop stream (must NOT be blocked)...")
+    dl_stream = os.path.join(test_dir, "Telegram Desktop", "received_archive.zip.tdesktop.1a2b3c")
+    os.makedirs(os.path.dirname(dl_stream), exist_ok=True)
+    with open(dl_stream, "wb") as f:
+        f.write(b"PK\x03\x04stream_bytes")
+    reason = watchdog.is_violation(dl_stream)
+    assert reason is None, f"Expected incoming .tdesktop download to be allowed, but got: {reason}"
+    print(" -> PASSED: In-flight .tdesktop download allowed!")
 
-    print("[TEST 6] Testing temp download part file (must NOT be blocked)...")
+    print("[TEST 6] Testing in-flight download with .part file (must NOT be blocked)...")
     part_file = os.path.join(test_dir, "incoming_character.fbx.part")
     with open(part_file, "wb") as f:
         f.write(b"Kaydara FBX Binary")
     reason = watchdog.is_violation(part_file)
     assert reason is None, f"Expected .part temp file to be allowed, but got: {reason}"
     print(" -> PASSED: Incomplete download (.part) allowed!")
+
+    print("[TEST 7] Testing EVASION LOOPHOLE: Uploading .fbx placed in 'Telegram Desktop' (MUST BE BLOCKED)...")
+    loophole_fbx = os.path.join(test_dir, "Telegram Desktop", "stolen_character.fbx")
+    with open(loophole_fbx, "wb") as f:
+        f.write(b"Kaydara FBX Binary  \x00\x1a\x00asset_data_here")
+    reason = watchdog.is_violation(loophole_fbx)
+    assert reason is not None and ".fbx" in reason, f"Expected loophole upload to be blocked, but got: {reason}"
+    print(f" -> PASSED: Loophole closed! Blocked upload: {reason}")
+
+    print("[TEST 8] Testing EVASION LOOPHOLE: Uploading .zip placed in 'Telegram Desktop' (MUST BE BLOCKED)...")
+    loophole_zip = os.path.join(test_dir, "Telegram Desktop", "stolen_archive.zip")
+    with open(loophole_zip, "wb") as f:
+        f.write(b"PK\x03\x04archive_data_here")
+    reason = watchdog.is_violation(loophole_zip)
+    assert reason is not None, f"Expected loophole zip upload to be blocked, but got: {reason}"
+    print(f" -> PASSED: Loophole closed! Blocked upload: {reason}")
 
     print("\n[SUCCESS] All DLP detection tests passed perfectly!\n")
 

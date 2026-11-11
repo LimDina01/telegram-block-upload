@@ -326,28 +326,31 @@ class DLPWatchdog:
         if "\\appdata\\local\\packages\\" in norm_path_lower:
             return None
 
-        # 2. Ignore Telegram's own internal data, databases, lock files & caches
+        # 2. Ignore Telegram's own internal app binaries, databases, and UI caches
         if "\\tdata" in norm_path_lower:
-            return None
-        if "telegram desktop" in norm_path_lower or "telegramdesktop" in norm_path_lower:
-            return None
-        if "telegram downloads" in norm_path_lower or "telegram_downloads" in norm_path_lower:
             return None
         if "\\shadercache" in norm_path_lower:
             return None
-        if "\\appdata\\local\\temp\\" in norm_path_lower or "\\appdata\\local\\temp" in norm_path_lower:
+        if "\\appdata\\local\\temp\\" in norm_path_lower:
             return None
         if "\\appdata\\roaming\\microsoft\\" in norm_path_lower or "\\appdata\\local\\microsoft\\" in norm_path_lower:
             return None
 
+        # Ignore Telegram's internal AppData roaming directory ONLY for internal files (e.g. app logs, config)
+        if "\\appdata\\roaming\\telegram desktop\\" in norm_path_lower or "\\appdata\\local\\telegramdesktop\\" in norm_path_lower:
+            # If someone placed a 3D model or archive here to evade, do not ignore!
+            if not any(norm_path_lower.endswith(e) for e in self.blocked_extensions):
+                return None
+
         _, ext = os.path.splitext(norm_path_lower)
 
-        # 3. Ignore Incoming Telegram Downloads & Temp Download files
-        # Prevents killing Telegram when an employee receives / downloads files
-        if ext in ('.part', '.tdesktop', '.crdownload', '.download', '.tmp'):
+        # 3. Universal Download Protection:
+        # Ignore active incoming download streams & temporary download files anywhere on PC
+        # (Telegram Desktop uses .tdesktop temporary streaming files during download)
+        if ".tdesktop" in norm_path_lower or ext in ('.part', '.tdesktop', '.crdownload', '.download', '.tmp'):
             return None
 
-        # Check if file is freshly created by Telegram (Save As download in progress)
+        # Check if file is freshly created by Telegram (0-byte file initialization during Save As)
         try:
             stat = os.stat(file_path)
             if (time.time() - stat.st_ctime) < 10 and stat.st_size == 0:
